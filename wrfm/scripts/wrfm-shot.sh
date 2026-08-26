@@ -18,14 +18,29 @@ PT=16          # pointsize: 120 braille cols * ~9.8px/char -> ~1180px wide per v
 command -v wrfm  >/dev/null || { echo "wrfm-shot: wrfm CLI not found on PATH" >&2; exit 2; }
 command -v magick >/dev/null || { echo "wrfm-shot: magick not found on PATH" >&2; exit 2; }
 
-FONT=''
-FONTLIST="$(magick -list font)"
-for f in DejaVu-Sans-Mono Monospace; do
-  if grep -qi "$f" <<< "$FONTLIST"; then FONT="$f"; break; fi
-done
-[ -n "$FONT" ] || FONT='Monospace'
-
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+
+# Pick a font that can actually draw braille (U+2800). The previous first
+# candidate, DejaVu-Sans-Mono, is installed almost everywhere but deliberately
+# lacks the braille block — a "successful" render comes out blank. DejaVu-Sans
+# is the most universal braille-capable face; Adwaita-Mono is the mono
+# equivalent when a GNOME desktop put it there.
+FONT=''
+if command -v fc-list >/dev/null 2>&1; then
+  fc-list ':charset=2800' --format '%{family}\n' 2>/dev/null \
+    | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | cut -d, -f1 | sort -u \
+    > "$tmp/braille-fonts.txt"
+  for f in Adwaita-Mono DejaVu-Sans DejaVu-Serif; do
+    if grep -Fixq "$f" "$tmp/braille-fonts.txt"; then FONT="$f"; break; fi
+  done
+fi
+if [ -z "$FONT" ]; then
+  FONTLIST="$(magick -list font)"
+  for f in DejaVu-Sans-Mono Monospace; do
+    if grep -qi "$f" <<< "$FONTLIST"; then FONT="$f"; break; fi
+  done
+  [ -n "$FONT" ] || FONT='Monospace'
+fi
 
 to_png() { # $1 = output path; reads render text from stdin
   magick -background "$BG" -fill "$FG" -font "$FONT" -pointsize "$PT" label:@- "$1"
