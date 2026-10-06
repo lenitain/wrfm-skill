@@ -34,7 +34,7 @@ wrfm/
 │   ├── wrfm-shot.sh          # .wrfm → PNG (single view, group zoom, or 2x3 six-view montage)
 │   └── smoke.sh              # End-to-end environment verification
 └── references/
-    ├── wrfm_assests/         # Finished sample models (anvil, bicycle, microwave, ...)
+    ├── wrfm_assets/          # Finished sample models (anvil, bicycle, microwave, ...)
     └── wrfm_generator/       # The Python scripts that generated them (+ WrfmModel helper)
 ```
 
@@ -42,12 +42,12 @@ wrfm/
 
 | Object | Sample asset | Generator script |
 | :--- | :--- | :--- |
-| anvil | `references/wrfm_assests/anvil.wrfm` | `references/wrfm_generator/gen_anvil.py` |
-| bicycle | `references/wrfm_assests/bicycle.wrfm` | `references/wrfm_generator/gen_bicycle.py` |
-| microwave | `references/wrfm_assests/microwave.wrfm` | `references/wrfm_generator/gen_microwave.py` |
-| toilet | `references/wrfm_assests/toilet.wrfm` | `references/wrfm_generator/gen_toilet.py` |
-| vintage TV | `references/wrfm_assests/vintage_tv.wrfm` | `references/wrfm_generator/gen_vintage_tv.py` |
-| washing machine | `references/wrfm_assests/washing_machine.wrfm` | `references/wrfm_generator/gen_washing_machine.py` |
+| anvil | `references/wrfm_assets/anvil.wrfm` | `references/wrfm_generator/gen_anvil.py` |
+| bicycle | `references/wrfm_assets/bicycle.wrfm` | `references/wrfm_generator/gen_bicycle.py` |
+| microwave | `references/wrfm_assets/microwave.wrfm` | `references/wrfm_generator/gen_microwave.py` |
+| toilet | `references/wrfm_assets/toilet.wrfm` | `references/wrfm_generator/gen_toilet.py` |
+| vintage TV | `references/wrfm_assets/vintage_tv.wrfm` | `references/wrfm_generator/gen_vintage_tv.py` |
+| washing machine | `references/wrfm_assets/washing_machine.wrfm` | `references/wrfm_generator/gen_washing_machine.py` |
 
 Each generator demonstrates reusable patterns — named groups per part,
 Y-up construction, ground at `y=0`, ring/hub/spoke and box/connect-ring
