@@ -58,7 +58,7 @@ every edit — that is the feedback loop of this skill.
 | Fill the canvas | add `--fit content` — the CLI auto-frames each view from the silhouette (padded 2%, clamped). Passes straight through `wrfm-shot.sh`. |
 | Magnify a detail | shoot one view large, then `magick shot.png -trim` — **do not guess `--region`** (normalized coordinates have no reliable source; an explicit `--region` also overrides `--fit`). |
 | Any camera | `--yaw 30 --pitch 20` (plus `--views ""` for a single frame); `--dist` is extremely sensitive — prefer `--fit` over hand-tuning it. |
-| Text-mode preview | `--detail overview\|standard\|fine` — these are **text-mode presets** (grid/ascii, small canvases: `fine` is `ascii 40x16`, *smaller* than `standard`), **not** PNG-shot presets. |
+| Text-mode preview | `--format grid --width 40 --height 16`（≈旧 overview 预设）—— **text-mode only**，不是 PNG-shot 预设；标准密度用 `--format grid --width 60 --height 24`，细文本用 `--format ascii --width 40 --height 16` |
 
 ## Image-channel integrity
 
