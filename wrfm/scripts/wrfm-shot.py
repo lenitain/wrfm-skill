@@ -8,7 +8,8 @@ Usage:
   wrfm-shot.py <model.wrfm> <out.png> --yaw 30 --pitch 20   # any camera wrfm render accepts
 
 Everything after <out.png> is passed straight to `wrfm render` — framing
-(dist / region / pan / pitch / yaw) belongs to the CLI, never to this script.
+(dist / fit / region / pan / pitch / yaw) belongs to the CLI, never to this
+script.
 
 Two guards against the failure mode that costs the most time (an image channel
 that quietly returns an OLDER image than the file just written):

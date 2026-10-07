@@ -10,9 +10,9 @@ Everything after <out.png> is passed straight to `wrfm render`, so both sides
 get identical framing by construction — hand-built montages drift apart.
 
 Why this exists: `wrfm diff` is authoritative for WHAT changed (vertices /
-edges / bounds), but its density grid is normalized per model, so a pure
-scale change reads as "0/128 cells changed". Numbers plus one honest picture
-is the comparison; neither alone is.
+edges / bounds / group membership), but its density grid is normalized per
+model, so a pure scale change reads as "0/128 cells changed". Numbers plus
+one honest picture is the comparison; neither alone is.
 
 Depends on: `wrfm` CLI, ImageMagick. Missing either stops with exit 2 —
 this skill never installs software; report it to the user.

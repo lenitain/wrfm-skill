@@ -54,11 +54,11 @@ every edit — that is the feedback loop of this skill.
 
 | Want | Do |
 | :--- | :--- |
-| Default 6-view montage | `wrfm-shot.sh m.wrfm shot.png` — `auto_dist` on; the model fills only ~10–19% of the canvas width. Fine for orientation, not for detail. |
+| Default 6-view montage | `wrfm-shot.sh m.wrfm shot.png` — `auto_dist` on; framing follows the model's geometric-mean extent, so a thin axis fills only ~15–25% of the canvas width (a long axis can reach ~50–65%). Fine for orientation, not for detail. |
 | Fill the canvas | add `--fit content` — the CLI auto-frames each view from the silhouette (padded 2%, clamped). Passes straight through `wrfm-shot.sh`. |
 | Magnify a detail | shoot one view large, then `magick shot.png -trim` — **do not guess `--region`** (normalized coordinates have no reliable source; an explicit `--region` also overrides `--fit`). |
 | Any camera | `--yaw 30 --pitch 20` (plus `--views ""` for a single frame); `--dist` is extremely sensitive — prefer `--fit` over hand-tuning it. |
-| Text-mode preview | `--format grid --width 40 --height 16`（≈旧 overview 预设）—— **text-mode only**，不是 PNG-shot 预设；标准密度用 `--format grid --width 60 --height 24`，细文本用 `--format ascii --width 40 --height 16` |
+| Text-mode preview | `--format grid --grid-w 32 --grid-h 16` (density numbers) or `--format ascii --width 40 --height 16` (fine text) — **text mode only**, never a PNG-shot preset |
 
 ## Image-channel integrity
 
@@ -123,6 +123,10 @@ Then decide:
   open line, a plain ring) → **keep it**. Real objects are full of parts that
   are open by nature; closing them makes the model look worse, not better.
 - **Accidental gap** (a line that should connect but does not) → **fix it**.
+- **Near-duplicate vertices** (the `near_duplicate_vertices` list: two
+  points closer than 1e-6) → **always fix** with
+  `wrfm edit m.wrfm --weld 1e-6`. Two points that close are one point, and
+  `--dedupe` is bit-exact, so it cannot see them.
 
 ## Edit a model (CLI, never by hand)
 
@@ -254,9 +258,11 @@ together. Pipeline:
    wrfm edit raw.wrfm --weld 1e-6 > welded.wrfm
    ```
 
-   `--weld <tol>` merges vertices within tolerance (first-touch group
-   assignment — a vertex lives in exactly one group) and runs the same
-   duplicate/zero-length cleanup as `--dedupe`.
+   `--weld <tol>` merges vertices strictly closer than `tol` (first-touch
+   group assignment — a vertex lives in exactly one group) and runs the same
+   duplicate/zero-length cleanup as `--dedupe`. `--weld 1e-6` is the repair
+   for what `wrfm check` reports as near-duplicate vertices (same 1e-6
+   threshold as the CLI's point identity).
 4. **Clean sampling residue**: `wrfm edit welded.wrfm --clean | wrfm edit - --dedupe`
    (degree-1 stubs at parameterization folds; see the generation chain above).
 5. **Normalize for the consumer**: ground at y=0 or bbox-centered via
@@ -291,7 +297,7 @@ them with "Judging a `warn` verdict"; do not "fix" correct geometry.
 | Transform / topology edit | `wrfm transform ...` · `wrfm edit ...` (their `--help`) |
 | Weld near-duplicate vertices | `wrfm edit m.wrfm --weld 1e-6` (tolerance merge, then dedupe cleanup) |
 | Diff | `wrfm diff a.wrfm b.wrfm --format json` |
-| Safe queries | `wrfm query m.wrfm extents` (also topology, edge_stats, profile, cross_section, vertices, distance, connectivity) |
+| Safe queries | `wrfm query m.wrfm profile` (also cross_section, vertices, distance, connectivity) · summaries: `wrfm geometry m.wrfm` (.bounds / .topology / .edge_lengths) |
 | Format spec | `wrfm format` |
 
 ## Fallback when the image channel degrades (stackable)
