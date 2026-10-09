@@ -10,6 +10,11 @@ wireframe models** — image-first, with a strict health-check feedback loop.
 viewer and live-editor for braille-rendered 3D wireframes, and the
 [`ratatui-wireframe`](https://crates.io/crates/ratatui-wireframe) rendering crate.
 
+The current format is **v2**: the file opens with a `wrfm 2` magic line and a
+`vertices <N>   edges <M>` counts header. The v1 files of older `wrfm` 0.4.0
+have neither and are rejected; `wrfm format` prints the full spec, including
+how to migrate one.
+
 ## Why this skill exists
 
 Wireframe models are *shapes*, not strings. Terminal character art hides
@@ -27,7 +32,7 @@ reference library of proven topology patterns to copy instead of re-invent.
 
 ## What's inside
 
-```
+```text
 wrfm/
 ├── SKILL.md                  # The operating guide the agent loads
 ├── scripts/
