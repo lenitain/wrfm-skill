@@ -25,12 +25,15 @@ for f in "$REPO"/references/wrfm_assets/*.wrfm; do
 done
 
 echo "== 4. image pipeline: six-view montage =="
-"$REPO/scripts/wrfm-shot.sh" "$REPO/references/wrfm_assets/anvil.wrfm" /tmp/wrfm-smoke.png
+# smoke owns these two fixed names — clear them so a re-run is possible
+# (wrfm-shot.py deliberately refuses to overwrite an existing PNG).
+rm -f /tmp/wrfm-smoke.png /tmp/wrfm-smoke-zoom.png
+"$REPO/scripts/wrfm-shot.py" "$REPO/references/wrfm_assets/anvil.wrfm" /tmp/wrfm-smoke.png
 [ -s /tmp/wrfm-smoke.png ] || { echo "FAIL: montage PNG is empty" >&2; exit 1; }
 magick identify /tmp/wrfm-smoke.png
 
 echo "== 5. image pipeline: single-view close-up =="
-"$REPO/scripts/wrfm-shot.sh" "$REPO/references/wrfm_assets/anvil.wrfm" /tmp/wrfm-smoke-zoom.png --views front
+"$REPO/scripts/wrfm-shot.py" "$REPO/references/wrfm_assets/anvil.wrfm" /tmp/wrfm-smoke-zoom.png --views front
 [ -s /tmp/wrfm-smoke-zoom.png ] || { echo "FAIL: zoom PNG is empty" >&2; exit 1; }
 
 echo "== 6. image content is non-blank (objective check) =="
