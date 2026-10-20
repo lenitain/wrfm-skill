@@ -19,31 +19,36 @@ PNG with the read tool. A real picture gives you occlusion, silhouette,
 proportion, and perspective that no character art can. The wireframe is a
 shape to see, not a string to parse.
 
-The user may be watching the model live in the wireforge TUI (it hot-reloads
-the file): write your edits to the watched file so they see them in real time.
+The user may be watching the model in the wireforge TUI: it loads the file
+ONCE at startup and has no reload key (hot-reload is gone), so they see your
+edits only after restarting the viewer. Still write to the file they opened,
+and say when it changed.
 
 ## Requirements (check once when the skill loads)
 
-| Check | Command | Failure means |
-| :--- | :--- | :--- |
-| wrfm CLI | `wrfm format > /dev/null` | not installed, or a stale binary (build the wrfm-cli crate from the wireforge repo) |
-| ImageMagick | `magick -version` | install imagemagick |
-| multimodal vision | open a PNG with the read tool and describe it | do NOT drive the main loop — use "Fallback when the image channel degrades" below |
+| Check             | Command                                       | Failure means                                                                       |
+| :---------------- | :-------------------------------------------- | :---------------------------------------------------------------------------------- |
+| wrfm CLI          | `wrfm format > /dev/null`                     | not installed, or a stale binary (build the wrfm-cli crate from the wireforge repo) |
+| ImageMagick       | `magick -version`                             | install imagemagick                                                                 |
+| multimodal vision | open a PNG with the read tool and describe it | do NOT drive the main loop — use "Fallback when the image channel degrades" below   |
 
 Everything else comes from the CLI itself: `wrfm <sub> --help` per command,
-and `wrfm format` for the complete file-format spec.
+and `wrfm format` for the complete file-format spec. The normative spec is
+`crates/wrfm/docs/wrfm-spec.md` in the wireforge repo — where the CLI summary
+and that document disagree, the spec wins.
 
 ## See a model (the image channel)
 
-Script: `scripts/wrfm-shot.sh` in this skill's directory (wraps
-`wrfm render` + `magick`):
+Script: `scripts/wrfm-shot.py` in this skill's directory (wraps
+`wrfm render` + `magick`). It is THE entry point — `scripts/wrfm-shot.sh` is
+a deprecated wrapper that only forwards to it.
 
 ```bash
-wrfm-shot.sh <model.wrfm> shot.png                  # all 6 standard views, one 2x3 montage
-wrfm-shot.sh <model.wrfm> front.png --views front   # one view, large canvas
-wrfm-shot.sh <model.wrfm> head.png --group head     # one group only (auto-fits the part)
-wrfm-shot.sh <model.wrfm> zoom.png --views front --region 0.2,0.2,0.8,0.8  # magnify
-wrfm-shot.sh <model.wrfm> iso.png --views "" --yaw 30 --pitch 20           # any camera
+wrfm-shot.py <model.wrfm> shot.png                  # all 6 standard views, one 2x3 montage
+wrfm-shot.py <model.wrfm> front.png --views front   # one view, large canvas
+wrfm-shot.py <model.wrfm> head.png --group head     # one group only (auto-fits the part)
+wrfm-shot.py <model.wrfm> zoom.png --views front --region 0.2,0.2,0.8,0.8  # magnify
+wrfm-shot.py <model.wrfm> iso.png --views "" --yaw 30 --pitch 20           # any camera
 ```
 
 **After every shot, READ the produced PNG with the read tool.** If the image
@@ -52,26 +57,26 @@ every edit — that is the feedback loop of this skill.
 
 ### Camera quick reference
 
-| Want | Do |
-| :--- | :--- |
-| Default 6-view montage | `wrfm-shot.sh m.wrfm shot.png` — `auto_dist` on; framing follows the model's geometric-mean extent, so a thin axis fills only ~15–25% of the canvas width (a long axis can reach ~50–65%). Fine for orientation, not for detail. |
-| Fill the canvas | add `--fit content` — the CLI auto-frames each view from the silhouette (padded 2%, clamped). Passes straight through `wrfm-shot.sh`. |
-| Magnify a detail | shoot one view large, then `magick shot.png -trim` — **do not guess `--region`** (normalized coordinates have no reliable source; an explicit `--region` also overrides `--fit`). |
-| Any camera | `--yaw 30 --pitch 20` (plus `--views ""` for a single frame); `--dist` is extremely sensitive — prefer `--fit` over hand-tuning it. |
+| Want                     | Do                                                                                                                                                                                                                                                                                                                                                                   |
+| :----------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Default 6-view montage   | `wrfm-shot.py m.wrfm shot.png` — `auto_dist` on; the geometric-mean extent fills ~71% of the canvas height, so a short axis lands near half the canvas and a LONG axis reaches the edge and **clips** (measured on the samples: 20–30% of canvas width for a thin axis, up to 99–100% for a long one). Fine for orientation — check the edges for cut-off ends.      |
+| Fill the canvas          | add `--fit content` — the CLI crops every frame to its projected content bbox (padded 2% per side, clamped). It CROPS ONLY: content wider than the canvas stays clipped. Passes straight through `wrfm-shot.py`.                                                                                                                                                     |
+| Magnify a detail         | shoot one view large, then `magick shot.png -trim` — **do not guess `--region`** (normalized coordinates have no reliable source; an explicit `--region` also overrides `--fit`).                                                                                                                                                                                    |
+| Pull back (ends clipped) | `--auto-dist false --dist N` — the ONE case for hand-tuning `--dist`, and the only way to see a whole elongated model (`--fit` never zooms out). `--dist` alone is ignored while `auto-dist` stays true. `--vfov` (radians, default 0.5, max 3) changes perspective strength, not how much fits.                                                                     |
+| Any camera               | `--yaw 30 --pitch 20 --roll 10` (plus `--views ""` for a single frame); otherwise `--dist` is extremely sensitive — prefer `--fit` for magnifying, reach for `--dist` only to pull back.                                                                                                                                                                             |
 | Angle signs / view names | One convention everywhere (CLI = wireforge TUI HUD: same signed angle = same picture). `--yaw` positive = the object turns to its **own left** (right-hand turn about +Y); `--pitch` positive = seen from above (top toward the camera). Named views promise the **object side facing the camera** (drafting): `left` = its own left side, `top` = its own top (+Y). |
-| Text-mode preview | `--format grid --grid-w 32 --grid-h 16` (density numbers) or `--format ascii --width 40 --height 16` (fine text) — **text mode only**, never a PNG-shot preset |
+| Text-mode preview        | `--format grid --grid-w 32 --grid-h 16` (density numbers) or `--format ascii --width 40 --height 16` (fine text) — **text mode only**, never a PNG-shot preset                                                                                                                                                                                                       |
 
 ## Image-channel integrity
 
-The image channel's most expensive failure is *stale* output: `read` returns
+The image channel's most expensive failure is _stale_ output: `read` returns
 a PNG, but it is an OLDER render than the file you just wrote — you then
 judge the model from a picture that no longer describes it. Three rules make
 that failure detectable instead of invisible:
 
-1. **Every shot gets a NEW filename.** `wrfm-shot.py` (the implementation
-   behind `wrfm-shot.sh`) refuses to overwrite an existing PNG, so a fresh
-   file can never be confused with a cached one. Never reuse a shot name;
-   never re-read an old file after an edit.
+1. **Every shot gets a NEW filename.** `wrfm-shot.py` refuses to overwrite an
+   existing PNG, so a fresh file can never be confused with a cached one.
+   Never reuse a shot name; never re-read an old file after an edit.
 2. **Verify identity after every read.** Each shot stamps `# shot=<id>`
    INSIDE the image and prints the same id plus the model identity on
    stdout:
@@ -84,6 +89,7 @@ that failure detectable instead of invisible:
    After reading the PNG, compare three things: the `# shot=` line inside
    the image, the `name=`/`vertices=` header inside the image, and this
    stdout line. All three must agree (and agree with `wrfm info`).
+
 3. **Mismatch = stale image.** Do not trust it, do not reason from it. Take a
    NEW filename and re-shoot; read the new file. If the mismatch persists,
    the image channel is degraded — escalate through the stackable fallback
@@ -128,6 +134,13 @@ Then decide:
   points closer than 1e-6) → **always fix** with
   `wrfm edit m.wrfm --weld 1e-6`. Two points that close are one point, and
   `--dedupe` is bit-exact, so it cannot see them.
+- **Redundant vertices** (the `redundant_vertices` list: a collinear midpoint,
+  a degree-2 vertex whose two edges are one straight run) → judge it. If the
+  midpoint is a boundary you want to keep (group seam, later edits) or the
+  geometry is simply built that way, accept it exactly:
+  `wrfm verify m.wrfm --expect-redundant N`. There is no repair command —
+  `--clean` stops at degree 2 — so removing one means rebuilding the two
+  edges as a single edge (regenerate).
 
 ## Edit a model (CLI, never by hand)
 
@@ -139,6 +152,7 @@ it to a NEW file and re-verify:
 wrfm transform m.wrfm --rotate-y 45 --scale 1.5 > m_v2.wrfm   # affine ops
 wrfm edit m.wrfm --delete-vertices 0,3 > m_v2.wrfm            # topology ops
 wrfm edit m.wrfm --extract-group head > head.wrfm             # extract a part
+wrfm edit m.wrfm --merge part.wrfm > m_v2.wrfm                # merge a part
 wrfm transform m.wrfm --to-origin --normalize 2 > m_norm.wrfm # recentre + rescale
 ```
 
@@ -149,10 +163,29 @@ Rules:
 - **Small edits (rotate/scale/translate/mirror) → `wrfm transform`** (reliable
   math, keeps groups).
 - **Structure changes (vertex/edge counts) → `wrfm edit`** (delete vertices,
-  delete edges, extract a group, clean, dedupe). Exactly ONE operation per call.
+  delete edges, extract a group, clean, dedupe, weld, merge another model).
+  Exactly ONE operation per call.
 - **Never edit vertex coordinates by hand.** If you think you need to, you
   need a transform — or the model needs regenerating.
 - `wrfm check` the output file before you use it.
+
+## Canonical surface (`wrfm fmt`)
+
+`wrfm fmt m.wrfm` re-emits the file in canonical v2 surface form to stdout —
+shortest round-trip coordinates, LF line endings, BOM stripped, single blank
+separators — geometry untouched. `wrfm fmt --check m.wrfm` exits 1 when the
+bytes are not canonical (like `cargo fmt --check`); `-q` silences stdout.
+
+- **`fmt` reports the SURFACE only and carries no health tier**: its exit 1 is
+  "would rewrite", never a health `warn` (`diff` / `fmt` / `format` are the
+  commands without a health tier). `wrfm check` stays the health gate, so
+  `fmt --check` is not a delivery gate either — it only says the surface is
+  not canonical.
+- **Decorative `#` comments are DROPPED in this version** (preservation is
+  planned). The `references/wrfm_generator/` scripts write a
+  `# naviga model: ...` line, so `fmt` on their output costs that comment:
+  keep the commented file as the editable source, and `fmt` only the copy you
+  hand over.
 
 ## Reference library (references/) — copy, never invent
 
@@ -160,13 +193,13 @@ The repo ships finished sample models and the Python scripts that generated
 them. For any real object (appliance, vehicle, furniture, ...), consult the
 library BEFORE writing anything:
 
-| Object | Sample asset | Generator script |
-| :--- | :--- | :--- |
-| anvil | `references/wrfm_assets/anvil.wrfm` | `references/wrfm_generator/gen_anvil.py` |
-| bicycle | `references/wrfm_assets/bicycle.wrfm` | `references/wrfm_generator/gen_bicycle.py` |
-| microwave | `references/wrfm_assets/microwave.wrfm` | `references/wrfm_generator/gen_microwave.py` |
-| toilet | `references/wrfm_assets/toilet.wrfm` | `references/wrfm_generator/gen_toilet.py` |
-| vintage TV | `references/wrfm_assets/vintage_tv.wrfm` | `references/wrfm_generator/gen_vintage_tv.py` |
+| Object          | Sample asset                                  | Generator script                                   |
+| :-------------- | :-------------------------------------------- | :------------------------------------------------- |
+| anvil           | `references/wrfm_assets/anvil.wrfm`           | `references/wrfm_generator/gen_anvil.py`           |
+| bicycle         | `references/wrfm_assets/bicycle.wrfm`         | `references/wrfm_generator/gen_bicycle.py`         |
+| microwave       | `references/wrfm_assets/microwave.wrfm`       | `references/wrfm_generator/gen_microwave.py`       |
+| toilet          | `references/wrfm_assets/toilet.wrfm`          | `references/wrfm_generator/gen_toilet.py`          |
+| vintage TV      | `references/wrfm_assets/vintage_tv.wrfm`      | `references/wrfm_generator/gen_vintage_tv.py`      |
 | washing machine | `references/wrfm_assets/washing_machine.wrfm` | `references/wrfm_generator/gen_washing_machine.py` |
 
 Rules:
@@ -188,9 +221,11 @@ Rules:
 
 ## Generate a model (from scratch)
 
-Get the exact spec from the CLI: `wrfm format`. Minimal example (unit box,
-one directive per line — several `v` directives on one line are NOT the
-same model: each line contributes exactly one element):
+Get the exact spec from the CLI: `wrfm format` (the normative text is
+`crates/wrfm/docs/wrfm-spec.md` in the wireforge repo — it wins on
+disagreement). Minimal example (unit box, one directive per line — several
+`v` directives on one line are NOT the same model: each line contributes
+exactly one element):
 
 ```text
 wrfm 2
@@ -219,6 +254,10 @@ e 2 6
 e 3 7
 ```
 
+Coordinates must be finite: `NaN` / `inf` are a format error (the parser
+rejects them), so generator math must never emit `nan` / `inf` —
+`repr(float)` will, given the chance.
+
 Archetypes — copy these structures, never free-invent topology (`.wrfm` has
 almost no training data; pattern-match these instead):
 
@@ -231,8 +270,10 @@ almost no training data; pattern-match these instead):
 
 **Health standard**: the archetypes are closed surfaces — every vertex
 degree >= 3, every edge in at least one cycle, no open chains, no dangling
-ends. If your shape is not one of these, still build it from closed rings +
-connectors. This is the standard for SOLID primitives; real objects with
+ends. (Degree 2 is not a finding by itself: `check` flags only a _collinear_
+degree-2 midpoint — `redundant`.) If your shape is not one of these, still
+build it from closed rings + connectors. This is the standard for SOLID
+primitives; real objects with
 deliberate open detail (handles, levers, hanging pieces, openings) legitimately
 fall to `warn` — judge it, don't blindly "fix" it (see "Judging a `warn`
 verdict"). Only accidental gaps must be repaired before finishing.
@@ -262,14 +303,23 @@ index remapping) for nothing. `wrfm edit --clean` exists precisely for this;
 
 ## Model from real data (external datasets)
 
-When the target comes from real data (OBJ meshes, Bezier patch files like
-`.bpt`, point dumps) instead of the reference library, there is **no
-`wrfm import`** — parsing and sampling stay in a skill-side Python script.
-What the CLI *does* provide is the hard part: welding sampled coordinates
-together. Pipeline:
+When the target comes from real data instead of the reference library, pick
+the route by source format:
+
+- **OBJ meshes → `wrfm convert model.obj > model.wrfm`** (pass `-` for stdin;
+  the format is detected from content, never the extension). Faces contribute
+  their ring of edges, `l` its chain (shared edges dedupe); `vt` / `vn` /
+  materials are dropped and `o` / `g` groups are never invented. This
+  replaces a hand-written OBJ reader — the weld/clean steps below still apply
+  (OBJ seams leave coincident-but-distinct vertices).
+- **Bezier patch files (`.bpt`), point dumps, anything you sample yourself →
+  a skill-side Python script** — there is no general `wrfm import`. What the
+  CLI _does_ provide is the hard part: welding sampled coordinates together.
+
+Pipeline (the sampled route):
 
 1. **Parse the source format in Python** (one-off script; Bernstein-basis
-   evaluation for Bezier patches, plain reader for OBJ/points).
+   evaluation for Bezier patches, a plain reader for points).
 2. **Sample into wireframe vertices + edges** (grid lines on curves/surfaces).
    Emit one `.wrfm` with everything in a group.
 3. **Weld the seams**: adjacent patches share boundaries mathematically, but
@@ -285,13 +335,14 @@ together. Pipeline:
    duplicate/zero-length cleanup as `--dedupe`. `--weld 1e-6` is the repair
    for what `wrfm check` reports as near-duplicate vertices (same 1e-6
    threshold as the CLI's point identity).
+
 4. **Clean sampling residue**: `wrfm edit welded.wrfm --clean | wrfm edit - --dedupe`
    (degree-1 stubs at parameterization folds; see the generation chain above).
 5. **Normalize for the consumer**: ground at y=0 or bbox-centered via
    `wrfm transform`, then `wrfm check` and declare intent +
    `wrfm verify`.
 
-Degenerate points that are *inherent to the data* (e.g. whole control rows
+Degenerate points that are _inherent to the data_ (e.g. whole control rows
 collapsing to a pinch point on Bezier tips) will surface as `warn` — judge
 them with "Judging a `warn` verdict"; do not "fix" correct geometry.
 
@@ -312,21 +363,24 @@ them with "Judging a `warn` verdict"; do not "fix" correct geometry.
 
 ## Quick reference
 
-| Task | Command |
-| :--- | :--- |
-| Facts (scale/topology/symmetry) | `wrfm info m.wrfm` · `wrfm geometry m.wrfm` |
-| Parts (groups) | `wrfm group m.wrfm` |
-| See the shape | `wrfm-shot.sh m.wrfm shot.png` + read the PNG |
-| Fill the canvas / frame | `wrfm-shot.sh m.wrfm shot.png --fit content` (see "Camera quick reference") |
-| Reference library | `references/wrfm_assets/` (sample assets) · `references/wrfm_generator/` (their generators) — copy, never invent |
-| Exact occlusion/outline numbers | `wrfm view m.wrfm --pitch 30 --yaw 45` |
-| Health | `wrfm check m.wrfm` (add `--strict` for zero tolerance) |
-| Intent | `wrfm verify m.wrfm --expect-size 2,2,2` |
-| Transform / topology edit | `wrfm transform ...` · `wrfm edit ...` (their `--help`) |
-| Weld near-duplicate vertices | `wrfm edit m.wrfm --weld 1e-6` (tolerance merge, then dedupe cleanup) |
-| Diff | `wrfm diff a.wrfm b.wrfm --format json` |
-| Safe queries | `wrfm query m.wrfm profile` (also cross_section, vertices, distance, connectivity) · summaries: `wrfm geometry m.wrfm` (.bounds / .topology / .edge_lengths) |
-| Format spec | `wrfm format` |
+| Task                            | Command                                                                                                                                                                     |
+| :------------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Facts (scale/topology/symmetry) | `wrfm info m.wrfm` · `wrfm geometry m.wrfm`                                                                                                                                 |
+| Parts (groups)                  | `wrfm group m.wrfm`                                                                                                                                                         |
+| See the shape                   | `wrfm-shot.py m.wrfm shot.png` + read the PNG                                                                                                                               |
+| Fill the canvas / frame         | `wrfm-shot.py m.wrfm shot.png --fit content` (see "Camera quick reference")                                                                                                 |
+| Reference library               | `references/wrfm_assets/` (sample assets) · `references/wrfm_generator/` (their generators) — copy, never invent                                                            |
+| Exact occlusion/outline numbers | `wrfm view m.wrfm --pitch 30 --yaw 45`                                                                                                                                      |
+| Health                          | `wrfm check m.wrfm` (add `--strict` for zero tolerance)                                                                                                                     |
+| Intent                          | `wrfm verify m.wrfm --expect-size 2,2,2` (also `--expect-center` / `--expect-closed` / `--expect-axis` / `--expect-symmetric` / `--expect-groups` / `--expect-redundant N`) |
+| Transform / topology edit       | `wrfm transform ...` · `wrfm edit ...` (their `--help`)                                                                                                                     |
+| Weld near-duplicate vertices    | `wrfm edit m.wrfm --weld 1e-6` (tolerance merge, then dedupe cleanup)                                                                                                       |
+| Fold in a second model          | `wrfm edit m.wrfm --merge part.wrfm`                                                                                                                                        |
+| Canonical surface               | `wrfm fmt m.wrfm` · `wrfm fmt --check` (exit 1 = not canonical; drops `#` comments)                                                                                         |
+| OBJ → `.wrfm`                   | `wrfm convert model.obj > model.wrfm` (content-detected; `-` for stdin)                                                                                                     |
+| Diff                            | `wrfm diff a.wrfm b.wrfm --format json`                                                                                                                                     |
+| Safe queries                    | `wrfm query m.wrfm profile` (also cross_section, vertices, distance, connectivity) · summaries: `wrfm geometry m.wrfm` (.bounds / .topology / .edge_lengths)                |
+| Format spec                     | `wrfm format` (normative: `crates/wrfm/docs/wrfm-spec.md` in the wireforge repo)                                                                                            |
 
 ## Fallback when the image channel degrades (stackable)
 
@@ -365,3 +419,8 @@ say so. This is a degraded mode: the image loop is strictly better.
   multimodal; the image IS the render.
 - **Guessing flags** → `wrfm render --help` (or any `wrfm <sub> --help`)
   before guessing; the CLI self-describes.
+- **Trusting `--fit content` to show a whole elongated model** → it crops only
+  and never zooms out; when the ends run off the canvas, pull back with
+  `--auto-dist false --dist N`.
+- **Reading `wrfm fmt --check` exit 1 as a health `warn`** → `fmt` carries no
+  health tier; that 1 only means "would rewrite the surface".

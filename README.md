@@ -17,7 +17,7 @@ how to migrate one.
 
 ## Why this skill exists
 
-Wireframe models are *shapes*, not strings. Terminal character art hides
+Wireframe models are _shapes_, not strings. Terminal character art hides
 occlusion, silhouette, proportion, and perspective. This skill installs one
 core discipline into the agent's workflow:
 
@@ -36,7 +36,8 @@ reference library of proven topology patterns to copy instead of re-invent.
 wrfm/
 ├── SKILL.md                  # The operating guide the agent loads
 ├── scripts/
-│   ├── wrfm-shot.sh          # .wrfm → PNG (single view, group zoom, or 2x3 six-view montage)
+│   ├── wrfm-shot.py          # .wrfm → PNG (single view, group zoom, or 2x3 six-view montage)
+│   ├── wrfm-shot.sh          # deprecated wrapper, forwards to wrfm-shot.py
 │   └── smoke.sh              # End-to-end environment verification
 └── references/
     ├── wrfm_assets/          # Finished sample models (anvil, bicycle, microwave, ...)
@@ -45,13 +46,13 @@ wrfm/
 
 ### Reference library
 
-| Object | Sample asset | Generator script |
-| :--- | :--- | :--- |
-| anvil | `references/wrfm_assets/anvil.wrfm` | `references/wrfm_generator/gen_anvil.py` |
-| bicycle | `references/wrfm_assets/bicycle.wrfm` | `references/wrfm_generator/gen_bicycle.py` |
-| microwave | `references/wrfm_assets/microwave.wrfm` | `references/wrfm_generator/gen_microwave.py` |
-| toilet | `references/wrfm_assets/toilet.wrfm` | `references/wrfm_generator/gen_toilet.py` |
-| vintage TV | `references/wrfm_assets/vintage_tv.wrfm` | `references/wrfm_generator/gen_vintage_tv.py` |
+| Object          | Sample asset                                  | Generator script                                   |
+| :-------------- | :-------------------------------------------- | :------------------------------------------------- |
+| anvil           | `references/wrfm_assets/anvil.wrfm`           | `references/wrfm_generator/gen_anvil.py`           |
+| bicycle         | `references/wrfm_assets/bicycle.wrfm`         | `references/wrfm_generator/gen_bicycle.py`         |
+| microwave       | `references/wrfm_assets/microwave.wrfm`       | `references/wrfm_generator/gen_microwave.py`       |
+| toilet          | `references/wrfm_assets/toilet.wrfm`          | `references/wrfm_generator/gen_toilet.py`          |
+| vintage TV      | `references/wrfm_assets/vintage_tv.wrfm`      | `references/wrfm_generator/gen_vintage_tv.py`      |
 | washing machine | `references/wrfm_assets/washing_machine.wrfm` | `references/wrfm_generator/gen_washing_machine.py` |
 
 Each generator demonstrates reusable patterns — named groups per part,
@@ -62,11 +63,11 @@ these, not hand-written.
 
 ## Requirements
 
-| Dependency | Check | Needed for |
-| :--- | :--- | :--- |
-| [`wrfm` CLI](https://github.com/Vaishnav-Sabari-Girish/wireforge) (the `wrfm-cli` crate in that repo) | `wrfm format > /dev/null` | All model operations |
-| ImageMagick | `magick -version` | Render → PNG conversion |
-| Multimodal vision | Open a PNG with the read tool | The primary workflow |
+| Dependency                                                                                            | Check                         | Needed for              |
+| :---------------------------------------------------------------------------------------------------- | :---------------------------- | :---------------------- |
+| [`wrfm` CLI](https://github.com/Vaishnav-Sabari-Girish/wireforge) (the `wrfm-cli` crate in that repo) | `wrfm format > /dev/null`     | All model operations    |
+| ImageMagick                                                                                           | `magick -version`             | Render → PNG conversion |
+| Multimodal vision                                                                                     | Open a PNG with the read tool | The primary workflow    |
 
 Without vision, the skill degrades to a documented text-mode fallback
 (density grids + query facts) rather than pretending to see.
@@ -92,10 +93,10 @@ Then verify the environment end-to-end:
 Just ask your agent naturally — the skill triggers on any `.wrfm`
 build/fix/rotate/review request:
 
-- *"Build a windmill as a .wrfm model"*
-- *"This bicycle looks squashed — fix the proportions"*
-- *"Rotate the anvil 45° and check it's still healthy"*
-- *"What parts does this microwave model have?"*
+- _"Build a windmill as a .wrfm model"_
+- _"This bicycle looks squashed — fix the proportions"_
+- _"Rotate the anvil 45° and check it's still healthy"_
+- _"What parts does this microwave model have?"_
 
 The typical session follows the skill's iterate loop: facts → render →
 look → edit → check → verify → diff. If you keep the model open in the
